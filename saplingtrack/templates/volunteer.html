@@ -1,0 +1,34 @@
+{% extends "volunteer_base.html" %}
+{% block content %}
+<h1>Hi {{ volunteer.name }}, here are your saplings</h1>
+
+{% if first_time %}
+  <p class="intro">You've been asked to look after {{ 'this sapling' if saplings|length == 1 else 'these saplings' }}.
+    Find the number on the tree tag, then tap it here whenever you water it.</p>
+{% endif %}
+
+{% for s in saplings %}
+  <a class="sapling-card" href="{{ url_for('volunteer_sapling', token=volunteer.token, sapling_id=s.id) }}"
+     style="border-left-color: {{ s.colour }}">
+    <span class="tag">#{{ s.sapling_number }}</span>
+    <span class="card-main">
+      <strong>{{ s.species }}</strong>
+      {% if first_time %}
+        <span class="meta">Tap to log a watering</span>
+      {% elif s.status == 'damaged' %}
+        <span class="meta">Reported damaged</span>
+      {% elif s.status == 'established' %}
+        <span class="meta">Established, no more reminders</span>
+      {% elif s.status == 'overdue' %}
+        <span class="meta due"><span style="color: {{ s.colour }}">◷</span> Overdue, please water it today</span>
+      {% elif s.next_due <= today %}
+        <span class="meta due">Next watering due today</span>
+      {% else %}
+        <span class="meta">Next watering due {{ s.next_due.strftime('%A %d %b') }}</span>
+      {% endif %}
+    </span>
+  </a>
+{% else %}
+  <p class="sub">You don't have any saplings yet.</p>
+{% endfor %}
+{% endblock %}

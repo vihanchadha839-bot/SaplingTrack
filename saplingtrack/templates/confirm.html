@@ -1,0 +1,8 @@
+{% extends "volunteer_base.html" %}
+{% block content %}
+<h1>{{ 'Watered' if action == 'water' else 'Report damage on' }} sapling #{{ sapling.sapling_number }}?</h1>
+<form method="POST" data-offline>
+  <button type="submit" class="big {{ '' if action == 'water' else 'red' }}">Confirm</button>
+</form>
+<a class="back" href="{{ url_for('volunteer_sapling', token=volunteer.token, sapling_id=sapling.id) }}">Cancel</a>
+{% endblock %}

@@ -1,0 +1,27 @@
+{% extends "base.html" %}
+{% block title %}Volunteers{% endblock %}
+{% block content %}
+<h1>Volunteers</h1>
+
+<form method="POST" class="card">
+  <label for="name">Name</label>
+  <input id="name" name="name" required>
+  <label for="phone">Phone (optional)</label>
+  <input id="phone" name="phone" inputmode="tel">
+  {% if error %}<p class="error">{{ error }}</p>{% endif %}
+  <button type="submit">Add volunteer</button>
+</form>
+
+{% for v in volunteers %}
+  {% set link = url_for('volunteer_page', token=v.token, _external=True) %}
+  <div class="row">
+    <div class="row-main">
+      <strong>{{ v.name }}</strong>
+      <span class="meta">{{ link }}</span>
+    </div>
+    <button class="small" onclick="navigator.clipboard.writeText('{{ link }}'); this.textContent='Copied'">Copy link</button>
+  </div>
+{% else %}
+  <p class="sub">No volunteers yet.</p>
+{% endfor %}
+{% endblock %}

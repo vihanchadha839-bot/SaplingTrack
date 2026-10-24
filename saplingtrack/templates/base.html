@@ -1,0 +1,24 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>{% block title %}SaplingTrack{% endblock %}</title>
+  <link rel="stylesheet" href="{{ url_for('static', filename='style.css') }}">
+  {% block head %}{% endblock %}
+</head>
+<body>
+  <nav class="topbar">
+    <a class="brand" href="{{ url_for('dashboard') }}">SaplingTrack</a>
+    <a href="{{ url_for('dashboard') }}">Dashboard</a>
+    <a href="{{ url_for('register') }}">Register sapling</a>
+    <a href="{{ url_for('volunteers_page') }}">Volunteers</a>
+  </nav>
+  <div id="offline-banner" class="banner" hidden>Not saved yet, will retry when you have signal</div>
+  <main>
+    {% block content %}{% endblock %}
+  </main>
+  <script src="{{ url_for('static', filename='offline.js') }}"></script>
+  {% block scripts %}{% endblock %}
+</body>
+</html>
