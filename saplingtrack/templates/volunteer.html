@@ -2,7 +2,7 @@
 {% block content %}
 <h1>Hi {{ volunteer.name }}, here are your saplings</h1>
 
-{% if first_time %}
+{% if first_time and saplings %}
   <p class="intro">You've been asked to look after {{ 'this sapling' if saplings|length == 1 else 'these saplings' }}.
     Find the number on the tree tag, then tap it here whenever you water it.</p>
 {% endif %}
