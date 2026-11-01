@@ -1,0 +1,49 @@
+{% extends "base.html" %}
+{% block title %}SaplingTrack · Every sapling, cared for{% endblock %}
+{% block content %}
+<section class="hero">
+  <div class="hero-text">
+    <p class="eyebrow">Tree plantation aftercare</p>
+    <h1>Every sapling planted.<br><span>Every sapling cared for.</span></h1>
+    <p class="lead">Plantation drives plant hundreds of saplings in a morning, then nobody is responsible for them. SaplingTrack gives every sapling a named carer, reminds them when to water, and shows organisers how many trees are really surviving.</p>
+    <div class="hero-actions">
+      <a class="button" href="{{ url_for('dashboard') }}">Open dashboard</a>
+      <a class="button ghost" href="{{ url_for('register') }}">Register a sapling</a>
+    </div>
+  </div>
+  <div class="hero-art" aria-hidden="true">
+    <div class="sprout">
+      <span class="stem"></span><span class="leaf-l"></span><span class="leaf-r"></span>
+    </div>
+    <div class="ground"></div>
+  </div>
+</section>
+
+<section class="stats">
+  <div class="stat"><div class="stat-num" data-count="{{ stats.survival }}" data-suffix="%">{{ stats.survival }}%</div><div class="stat-label">surviving</div></div>
+  <div class="stat"><div class="stat-num" data-count="{{ stats.planted }}">{{ stats.planted }}</div><div class="stat-label">saplings tracked</div></div>
+  <div class="stat"><div class="stat-num" data-count="{{ stats.volunteers }}">{{ stats.volunteers }}</div><div class="stat-label">named carers</div></div>
+  <div class="stat"><div class="stat-num" data-count="{{ stats.waterings }}">{{ stats.waterings }}</div><div class="stat-label">waterings logged</div></div>
+</section>
+
+<section class="how">
+  <h2>How it works</h2>
+  <div class="steps">
+    <div class="step"><div class="step-n">1</div><h3>Register</h3><p>On planting day, the organiser records each sapling with its GPS location, species and one named volunteer. It takes under a minute.</p></div>
+    <div class="step"><div class="step-n">2</div><h3>Care</h3><p>Each volunteer gets a personal link on WhatsApp. No account needed. They log a watering or report damage in three taps.</p></div>
+    <div class="step"><div class="step-n">3</div><h3>Track</h3><p>The dashboard shows the real survival rate, with overdue and damaged saplings at the top so the organiser knows what needs help.</p></div>
+  </div>
+</section>
+
+<section class="why">
+  <div>
+    <h2>Why it matters</h2>
+    <p>Unmonitored drives often see most of their saplings die within two years, wasting the trees, the water and the volunteers' time. Giving every sapling one responsible person turns a single planting morning into two years of care.</p>
+  </div>
+  <div class="sdgs">
+    <span class="sdg">SDG 15 · Life on Land</span>
+    <span class="sdg">SDG 13 · Climate Action</span>
+    <span class="sdg">SDG 11 · Sustainable Communities</span>
+  </div>
+</section>
+{% endblock %}

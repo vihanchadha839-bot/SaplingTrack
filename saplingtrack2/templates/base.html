@@ -1,0 +1,29 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>{% block title %}SaplingTrack{% endblock %}</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="{{ url_for('static', filename='style.css') }}">
+  {% block head %}{% endblock %}
+</head>
+<body>
+  <nav class="topbar">
+    <a class="brand" href="{{ url_for('home') }}"><span class="leaf">❦</span> SaplingTrack</a>
+    <a href="{{ url_for('home') }}" class="{{ 'active' if request.endpoint == 'home' }}">Home</a>
+    <a href="{{ url_for('dashboard') }}" class="{{ 'active' if request.endpoint == 'dashboard' }}">Dashboard</a>
+    <a href="{{ url_for('register') }}" class="{{ 'active' if request.endpoint == 'register' }}">Register sapling</a>
+    <a href="{{ url_for('volunteers_page') }}" class="{{ 'active' if request.endpoint == 'volunteers_page' }}">Volunteers</a>
+  </nav>
+  <div id="offline-banner" class="banner" hidden>Not saved yet, will retry when you have signal</div>
+  <main>
+    {% block content %}{% endblock %}
+  </main>
+  <script src="{{ url_for('static', filename='offline.js') }}"></script>
+  <script src="{{ url_for('static', filename='animate.js') }}"></script>
+  {% block scripts %}{% endblock %}
+</body>
+</html>

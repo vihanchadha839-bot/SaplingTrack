@@ -1,0 +1,65 @@
+{% extends "base.html" %}
+{% block title %}Register a sapling{% endblock %}
+{% block content %}
+<h1>Register a sapling</h1>
+
+{% if errors.form %}<p class="error">{{ errors.form }}</p>{% endif %}
+
+<form method="POST" action="{{ url_for('register') }}" class="card" data-offline>
+  <label for="drive">Drive</label>
+  <select name="drive" id="drive" required>
+    <option value="">Pick a drive</option>
+    {% for d in drives %}
+      <option value="{{ d.id }}" {% if form.drive == d.id|string %}selected{% endif %}>{{ d.name }}</option>
+    {% endfor %}
+  </select>
+  {% if errors.drive %}<p class="error">{{ errors.drive }}</p>{% endif %}
+
+  <label for="carer">Who will look after it?</label>
+  <select name="carer" id="carer" required>
+    <option value="">Pick a volunteer</option>
+    {% for v in volunteers %}
+      <option value="{{ v.id }}" {% if form.carer == v.id|string %}selected{% endif %}>{{ v.name }}</option>
+    {% endfor %}
+  </select>
+  {% if errors.carer %}<p class="error">{{ errors.carer }}</p>{% endif %}
+
+  <label for="species">Species</label>
+  <select name="species" id="species" required>
+    <option value="">Pick a species</option>
+    {% for s in species %}
+      <option value="{{ s }}" {% if form.species == s %}selected{% endif %}>{{ s }}</option>
+    {% endfor %}
+  </select>
+  {% if errors.species %}<p class="error">{{ errors.species }}</p>{% endif %}
+
+  <label for="notes">Notes (optional)</label>
+  <textarea name="notes" id="notes" maxlength="200">{{ form.notes or "" }}</textarea>
+  {% if errors.notes %}<p class="error">{{ errors.notes }}</p>{% endif %}
+
+  <input type="hidden" name="latitude" id="latitude">
+  <input type="hidden" name="longitude" id="longitude">
+  <p id="gps-status" class="sub">Finding your location...</p>
+  {% if errors.gps %}<p class="error">{{ errors.gps }}</p>{% endif %}
+
+  <button type="submit">Register sapling</button>
+</form>
+{% endblock %}
+
+{% block scripts %}
+<script>
+  // Location can only be read inside the browser, so this small part stays in JavaScript
+  navigator.geolocation.getCurrentPosition(
+    pos => {
+      document.getElementById("latitude").value = pos.coords.latitude;
+      document.getElementById("longitude").value = pos.coords.longitude;
+      document.getElementById("gps-status").textContent =
+        "Location found (accurate to about " + Math.round(pos.coords.accuracy) + " m)";
+    },
+    () => {
+      document.getElementById("gps-status").textContent = "Couldn't get location. Check location is turned on";
+    },
+    { enableHighAccuracy: true, timeout: 20000 }
+  );
+</script>
+{% endblock %}

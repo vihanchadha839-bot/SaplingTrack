@@ -1,0 +1,102 @@
+{% extends "base.html" %}
+{% block head %}
+<link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css">
+{% endblock %}
+{% block content %}
+{% if not drive %}
+  <h1>Welcome to SaplingTrack</h1>
+  <p>Start by adding your first planting drive.</p>
+  <form method="POST" action="{{ url_for('add_drive') }}" class="card">
+    <label for="name">Drive name</label>
+    <input id="name" name="name" required placeholder="Green Valley Drive">
+    <label for="location">Location</label>
+    <input id="location" name="location" placeholder="Green Valley Park, Andheri">
+    <button type="submit">Add drive</button>
+  </form>
+{% else %}
+  <div class="drive-bar">
+    <form method="GET" action="{{ url_for('dashboard') }}">
+      <select name="drive" onchange="this.form.submit()" aria-label="Choose drive">
+        {% for d in drives %}
+          <option value="{{ d.id }}" {% if d.id == drive.id %}selected{% endif %}>{{ d.name }}</option>
+        {% endfor %}
+      </select>
+    </form>
+    <details>
+      <summary>+ New drive</summary>
+      <form method="POST" action="{{ url_for('add_drive') }}" class="inline-form">
+        <input name="name" required placeholder="Drive name">
+        <input name="location" placeholder="Location">
+        <button type="submit">Add</button>
+      </form>
+    </details>
+  </div>
+
+  <section class="headline">
+    <div class="big">{{ survival }}% surviving</div>
+    <div class="sub">{{ alive }} of {{ total }} saplings alive</div>
+    {% if total == 0 %}
+      <p class="sub">No saplings registered yet. <a href="{{ url_for('register', drive=drive.id) }}">Register the first one</a>.</p>
+    {% endif %}
+  </section>
+
+  <div class="filters">
+    <a class="filter {% if show == 'all' %}on{% endif %}" href="?drive={{ drive.id }}&show=all">All</a>
+    <a class="filter {% if show == 'overdue' %}on{% endif %}" href="?drive={{ drive.id }}&show=overdue">Overdue ({{ counts.overdue }})</a>
+    <a class="filter {% if show == 'damaged' %}on{% endif %}" href="?drive={{ drive.id }}&show=damaged">Damaged ({{ counts.damaged }})</a>
+  </div>
+
+  <div class="layout">
+    <aside class="list">
+      {% for s in saplings %}
+        <div class="row" style="border-left-color: {{ s.colour }}">
+          <span class="icon" style="color: {{ s.colour }}">{{ s.icon }}</span>
+          <div class="row-main">
+            <strong>#{{ s.sapling_number }} {{ s.species }}</strong>
+            <span class="status">
+              {% if s.status == 'overdue' %}overdue by {{ s.days_overdue }} day{{ 's' if s.days_overdue != 1 }}
+              {% else %}{{ s.status }}{% endif %}
+            </span>
+            <span class="meta">Carer: {{ s.volunteers.name if s.volunteers else 'unknown' }} · Last watered: {{ s.last_watered or 'not yet' }}</span>
+          </div>
+          {% if s.status == 'damaged' %}
+            <form method="POST" action="{{ url_for('set_status', sapling_id=s.id) }}" class="row-actions">
+              <button name="status" value="healthy" class="small">Fixed</button>
+              <button name="status" value="dead" class="small grey">Dead</button>
+            </form>
+          {% endif %}
+        </div>
+      {% else %}
+        <p class="sub">Nothing to show here.</p>
+      {% endfor %}
+    </aside>
+    <div id="map"></div>
+  </div>
+{% endif %}
+{% endblock %}
+
+{% block scripts %}
+{% if drive %}
+<script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
+<script>
+  const COLOURS = {{ colours|tojson }};
+  const saplings = {{ all_saplings|tojson }};
+  const map = L.map("map");
+  L.tileLayer("https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png", {
+    maxZoom: 20, attribution: "&copy; OpenStreetMap contributors"
+  }).addTo(map);
+
+  if (saplings.length) {
+    const bounds = [];
+    saplings.forEach(s => {
+      L.circleMarker([s.latitude, s.longitude], {color: COLOURS[s.status], fillOpacity: 0.8, radius: 9})
+       .bindPopup(`#${s.sapling_number} ${s.species}<br>Carer: ${s.volunteers ? s.volunteers.name : ""}<br>${s.status}`).addTo(map);
+      bounds.push([s.latitude, s.longitude]);
+    });
+    map.fitBounds(bounds, {maxZoom: 18, padding: [30, 30]});
+  } else {
+    map.setView([19.076, 72.8777], 12);  // Mumbai until the first sapling is registered
+  }
+</script>
+{% endif %}
+{% endblock %}

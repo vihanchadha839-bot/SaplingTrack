@@ -1,0 +1,9 @@
+{% extends "volunteer_base.html" %}
+{% block content %}
+<div class="centre">
+  <p class="tick">✔</p>
+  <h1>Saved. Thanks for looking after #{{ sapling.sapling_number }}</h1>
+  {% if action == 'damage' %}<p class="sub">The organiser can now see this sapling needs help.</p>{% endif %}
+  <a class="button" href="{{ url_for('volunteer_page', token=volunteer.token) }}">Back to my saplings</a>
+</div>
+{% endblock %}
