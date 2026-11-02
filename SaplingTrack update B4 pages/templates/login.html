@@ -3,9 +3,9 @@
 {% block content %}
 <h1>Organiser login</h1>
 <form method="POST" class="card narrow">
-  <p class="sub">Enter the drive code. There's no account to make.</p>
+  <p class="sub">Enter the code for your drive. There's no account to make.</p>
   <label for="code">Drive code</label>
-  <input id="code" name="code" type="password" required autofocus>
+  <input id="code" name="code" required autofocus autocomplete="off" autocapitalize="characters">
   {% if error %}<p class="error">{{ error }}</p>{% endif %}
   <button type="submit">Open dashboard</button>
 </form>
