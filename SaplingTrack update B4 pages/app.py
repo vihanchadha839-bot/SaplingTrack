@@ -10,8 +10,9 @@ from supabase import create_client
 app = Flask(__name__)
 # Signs the login cookie. Uses SECRET_KEY from Render if set, otherwise one made from the database key
 app.secret_key = os.environ.get("SECRET_KEY") or hashlib.sha256(os.environ["SUPABASE_KEY"].encode()).hexdigest()
-# The drive code organisers type in to log in (set ORGANISER_CODE in Render)
+# Admin code: sees every drive and is the only code that can create drives (set ORGANISER_CODE in Render)
 ORGANISER_CODE = os.environ.get("ORGANISER_CODE", "roots2026")
+CODE_LETTERS = "ABCDEFGHJKLMNPQRSTUVWXYZ23456789"  # no 0/O or 1/I so codes are easy to read out
 
 # Connect to the Supabase database using keys stored as environment variables
 db = create_client(os.environ["SUPABASE_URL"], os.environ["SUPABASE_KEY"])
@@ -41,9 +42,12 @@ PRIORITY = {"damaged": 0, "overdue": 1, "healthy": 2, "established": 3, "dead": 
 
 # ---------- Reading from the database ----------
 
-def get_volunteers():
-    """Load every registered volunteer so the dropdown and lookup check use the same list."""
-    return db.table("volunteers").select("id, name, phone, token").order("name").execute().data
+def get_volunteers(drive_ids=None):
+    """Load the volunteers for the drives this organiser can see, so the dropdown and lookup check use the same list."""
+    query = db.table("volunteers").select("id, name, phone, token, drive_id").order("name")
+    if drive_ids is not None:
+        query = query.in_("drive_id", drive_ids)
+    return query.execute().data
 
 
 def get_species():
@@ -60,6 +64,24 @@ def get_intervals():
 
 def get_drives():
     return db.table("drives").select("*").order("date", desc=True).execute().data
+
+
+def my_drives():
+    """The admin code sees every drive. A drive code only sees its own drive."""
+    drives = get_drives()
+    if session.get("admin"):
+        return drives
+    return [d for d in drives if d["id"] == session.get("drive_id")]
+
+
+def my_drive_ids():
+    return [d["id"] for d in my_drives()]
+
+
+def my_sapling(sapling_id):
+    """Only return a sapling if it belongs to a drive this organiser can see."""
+    rows = db.table("saplings").select("*, volunteers(name, phone), drives(name)").eq("id", sapling_id).execute().data
+    return rows[0] if rows and rows[0]["drive_id"] in my_drive_ids() else None
 
 
 def get_saplings(drive_id):
@@ -176,7 +198,7 @@ def organiser_only(page):
     """Send anyone who hasn't entered the drive code to the login page first."""
     @wraps(page)
     def check(*args, **kwargs):
-        if not session.get("organiser"):
+        if not (session.get("admin") or session.get("drive_id")):
             return redirect(url_for("login", next=request.path))
         return page(*args, **kwargs)
     return check
@@ -186,8 +208,17 @@ def organiser_only(page):
 def login():
     error = None
     if request.method == "POST":
-        code = request.form.get("code", "").strip()
-        if secrets.compare_digest(code, ORGANISER_CODE):
+        code = request.form.get("code", "").strip().upper()
+        drive = next((d for d in get_drives() if (d.get("code") or "") == code), None) if code else None
+        if secrets.compare_digest(code, ORGANISER_CODE.upper()):
+            session.clear()
+            session["admin"] = True
+        elif drive:
+            session.clear()
+            session["drive_id"] = drive["id"]
+        else:
+            drive = None
+        if session.get("admin") or session.get("drive_id"):
             session["organiser"] = True
             session.permanent = True
             next_page = request.args.get("next", "")
@@ -207,7 +238,7 @@ def logout():
 @app.route("/dashboard")
 @organiser_only
 def dashboard():
-    drives = get_drives()
+    drives = my_drives()
     if not drives:
         return render_template("dashboard.html", drives=[], drive=None)
 
@@ -240,11 +271,15 @@ def dashboard():
 @app.route("/drives", methods=["POST"])
 @organiser_only
 def add_drive():
+    """Only the admin code can create drives. Each new drive gets its own code for its organiser."""
+    if not session.get("admin"):
+        return redirect(url_for("dashboard"))
     name = request.form.get("name", "").strip()
     location = request.form.get("location", "").strip()
     if name:
+        code = "".join(secrets.choice(CODE_LETTERS) for _ in range(6))
         row = db.table("drives").insert({
-            "name": name, "location": location, "date": date.today().isoformat()
+            "name": name, "location": location, "date": date.today().isoformat(), "code": code
         }).execute().data[0]
         return redirect(url_for("dashboard", drive=row["id"]))
     return redirect(url_for("dashboard"))
@@ -253,9 +288,9 @@ def add_drive():
 @app.route("/register", methods=["GET", "POST"])
 @organiser_only
 def register():
-    volunteers = get_volunteers()
+    drives = my_drives()
+    volunteers = get_volunteers([d["id"] for d in drives])
     species_list = get_species()
-    drives = get_drives()
 
     if request.method == "POST":
         valid_carers = {str(v["id"]) for v in volunteers}
@@ -292,15 +327,15 @@ def register():
 @organiser_only
 def sapling_record(sapling_id):
     """B4 Sapling Record: everything about one sapling, with its full watering history."""
-    rows = db.table("saplings").select("*, volunteers(name, phone), drives(name)").eq("id", sapling_id).execute().data
-    if not rows:
+    found = my_sapling(sapling_id)
+    if not found:
         return render_template("not_found.html"), 404
-    sapling = add_status(rows, get_intervals())[0]
+    sapling = add_status([found], get_intervals())[0]
     logs = (db.table("logs").select("type, created_at").eq("sapling_id", sapling_id)
               .order("created_at", desc=True).execute().data)
     waterings = len([l for l in logs if l["type"] == "water"])
     return render_template("sapling.html", s=sapling, logs=logs, waterings=waterings,
-                           volunteers=get_volunteers(), species=get_species(),
+                           volunteers=get_volunteers([sapling["drive_id"]]), species=get_species(),
                            colours=COLOURS, today=date.today())
 
 
@@ -308,6 +343,8 @@ def sapling_record(sapling_id):
 @organiser_only
 def mark_watered(sapling_id):
     """Organiser marks a sapling as watered, e.g. if they watered it themselves."""
+    if not my_sapling(sapling_id):
+        return render_template("not_found.html"), 404
     db.table("logs").insert({"sapling_id": sapling_id, "type": "water"}).execute()
     db.table("saplings").update({"last_watered": date.today().isoformat()}).eq("id", sapling_id).execute()
     return redirect(url_for("sapling_record", sapling_id=sapling_id))
@@ -317,11 +354,14 @@ def mark_watered(sapling_id):
 @organiser_only
 def edit_sapling(sapling_id):
     """B4 Edit Details and Reassign Carer. The same lookup checks as registering."""
+    sapling = my_sapling(sapling_id)
+    if not sapling:
+        return render_template("not_found.html"), 404
     carer = request.form.get("carer", "").strip()
     species = request.form.get("species", "").strip()
     notes = request.form.get("notes", "").strip()[:MAX_NOTES_LENGTH]
     changes = {"notes": notes}
-    if carer in {str(v["id"]) for v in get_volunteers()}:
+    if carer in {str(v["id"]) for v in get_volunteers([sapling["drive_id"]])}:
         changes["carer_id"] = carer
     if species in get_species():
         changes["species"] = species
@@ -333,7 +373,7 @@ def edit_sapling(sapling_id):
 @organiser_only
 def stats():
     """B4 Drive Statistics: survival rate and a month by month breakdown."""
-    drives = get_drives()
+    drives = my_drives()
     if not drives:
         return redirect(url_for("dashboard"))
     drive_id = request.args.get("drive", str(drives[0]["id"]))
@@ -367,7 +407,7 @@ def stats():
 def set_status(sapling_id):
     """Organiser marks a sapling dead, or back to healthy after a damage report is fixed."""
     new_status = request.form.get("status")
-    if new_status in ("healthy", "dead"):
+    if new_status in ("healthy", "dead") and my_sapling(sapling_id):
         db.table("saplings").update({"status": new_status}).eq("id", sapling_id).execute()
     return redirect(request.referrer or url_for("dashboard"))
 
@@ -375,19 +415,24 @@ def set_status(sapling_id):
 @app.route("/volunteers", methods=["GET", "POST"])
 @organiser_only
 def volunteers_page():
+    drives = my_drives()
+    drive_ids = [d["id"] for d in drives]
     error = None
     if request.method == "POST":
         name = request.form.get("name", "").strip()
         phone = request.form.get("phone", "").strip()
+        drive_id = request.form.get("drive", "").strip()
         if not name:
             error = "Enter the volunteer's name"
+        elif drive_id not in {str(i) for i in drive_ids}:
+            error = "Pick which drive this volunteer is helping with"
         else:
             # Random code so links can't be guessed by changing a number
             db.table("volunteers").insert({
-                "name": name, "phone": phone, "token": secrets.token_urlsafe(6)
+                "name": name, "phone": phone, "token": secrets.token_urlsafe(6), "drive_id": drive_id
             }).execute()
             return redirect(url_for("volunteers_page"))
-    return render_template("volunteers.html", volunteers=get_volunteers(), error=error)
+    return render_template("volunteers.html", volunteers=get_volunteers(drive_ids), drives=drives, error=error)
 
 
 # ---------- Volunteer pages (no login, no organiser menu) ----------
