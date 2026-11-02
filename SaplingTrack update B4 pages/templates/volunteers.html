@@ -8,6 +8,12 @@
   <input id="name" name="name" required>
   <label for="phone">Phone (optional)</label>
   <input id="phone" name="phone" inputmode="tel">
+  {% if drives|length > 1 %}
+  <label for="drive">Drive</label>
+  <select id="drive" name="drive" required>
+    {% for d in drives %}<option value="{{ d.id }}">{{ d.name }}</option>{% endfor %}
+  </select>
+  {% elif drives %}<input type="hidden" name="drive" value="{{ drives[0].id }}">{% endif %}
   {% if error %}<p class="error">{{ error }}</p>{% endif %}
   <button type="submit">Add volunteer</button>
 </form>
