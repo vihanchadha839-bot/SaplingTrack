@@ -193,3 +193,6 @@ details.card summary { cursor: pointer; }
 .statslink { font-weight: 600; color: var(--green-900); }
 .logout { text-align: center; margin: 10px 0 30px; }
 .logout a { color: var(--muted); }
+
+.drivecode { color: var(--muted); }
+.drivecode strong { color: var(--green-900); letter-spacing: .08em; }
