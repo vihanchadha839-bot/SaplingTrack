@@ -1,0 +1,9 @@
+{% extends "volunteer_base.html" %}
+{% block content %}
+<a class="back" href="{{ url_for('volunteer_page', token=volunteer.token) }}">Back</a>
+<h1>Sapling #{{ sapling.sapling_number }}, {{ sapling.species }}</h1>
+{% if sapling.notes %}<p class="sub">{{ sapling.notes }}</p>{% endif %}
+<a class="maps" href="https://www.google.com/maps?q={{ sapling.latitude }},{{ sapling.longitude }}" target="_blank">Find it on the map</a>
+<a class="button big" href="{{ url_for('volunteer_confirm', token=volunteer.token, sapling_id=sapling.id, action='water') }}">Water done</a>
+<a class="button big red" href="{{ url_for('volunteer_confirm', token=volunteer.token, sapling_id=sapling.id, action='damage') }}">Report damage</a>
+{% endblock %}

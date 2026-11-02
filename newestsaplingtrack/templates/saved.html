@@ -1,0 +1,9 @@
+{% extends "base.html" %}
+{% block title %}Sapling saved{% endblock %}
+{% block content %}
+<div class="centre">
+  <p>Saved. Write this number on the tree tag:</p>
+  <p class="number">#{{ number }}</p>
+  <a class="button" href="{{ url_for('register', drive=drive_id) }}">Register another sapling</a>
+</div>
+{% endblock %}

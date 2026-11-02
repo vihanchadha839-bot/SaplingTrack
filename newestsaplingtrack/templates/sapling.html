@@ -1,0 +1,60 @@
+{% extends "base.html" %}
+{% block title %}Sapling #{{ s.sapling_number }}{% endblock %}
+{% block content %}
+<a class="back" href="{{ url_for('dashboard', drive=s.drive_id) }}">Back to dashboard</a>
+<h1>Sapling #{{ s.sapling_number }}, {{ s.species }}</h1>
+
+<div class="record">
+  <div class="card">
+    <p class="status-pill" style="background: {{ s.colour }}">{{ s.icon }} {{ s.status }}</p>
+    <dl class="facts">
+      <dt>Drive</dt><dd>{{ s.drives.name if s.drives else '' }}</dd>
+      <dt>Carer</dt><dd>{{ s.volunteers.name if s.volunteers else 'unknown' }}{% if s.volunteers and s.volunteers.phone %} · {{ s.volunteers.phone }}{% endif %}</dd>
+      <dt>Planted</dt><dd>{{ s.planted_on }}</dd>
+      <dt>Last watered</dt><dd>{{ s.last_watered or 'not yet' }}</dd>
+      <dt>Next watering due</dt><dd>{% if s.status in ('established', 'dead') %}no more reminders{% else %}{{ s.next_due.strftime('%d %b %Y') }}{% endif %}</dd>
+      <dt>Watered</dt><dd>{{ waterings }} time{{ '' if waterings == 1 else 's' }}</dd>
+      {% if s.notes %}<dt>Notes</dt><dd>{{ s.notes }}</dd>{% endif %}
+    </dl>
+    <a class="maps" href="https://www.google.com/maps?q={{ s.latitude }},{{ s.longitude }}" target="_blank">Find it on the map</a>
+    {% if s.status != 'dead' %}
+    <form method="POST" action="{{ url_for('mark_watered', sapling_id=s.id) }}">
+      <button type="submit" class="big">Mark as watered</button>
+    </form>
+    {% endif %}
+    <form method="POST" action="{{ url_for('set_status', sapling_id=s.id) }}" class="row-actions spaced">
+      {% if s.status == 'damaged' %}<button name="status" value="healthy" class="small">Fixed</button>{% endif %}
+      {% if s.status != 'dead' %}<button name="status" value="dead" class="small grey">Mark dead</button>{% endif %}
+    </form>
+  </div>
+
+  <div>
+    <details class="card">
+      <summary><strong>Edit details or reassign carer</strong></summary>
+      <form method="POST" action="{{ url_for('edit_sapling', sapling_id=s.id) }}">
+        <label for="carer">Carer</label>
+        <select id="carer" name="carer">
+          {% for v in volunteers %}<option value="{{ v.id }}" {% if v.id == s.carer_id %}selected{% endif %}>{{ v.name }}</option>{% endfor %}
+        </select>
+        <label for="species">Species</label>
+        <select id="species" name="species">
+          {% for sp in species %}<option value="{{ sp }}" {% if sp == s.species %}selected{% endif %}>{{ sp }}</option>{% endfor %}
+        </select>
+        <label for="notes">Notes</label>
+        <textarea id="notes" name="notes" maxlength="200">{{ s.notes or '' }}</textarea>
+        <button type="submit">Save changes</button>
+      </form>
+    </details>
+
+    <div class="card">
+      <h2>History</h2>
+      {% for l in logs %}
+        <p class="log">{{ '💧 Watered' if l.type == 'water' else '⚠ Damage reported' }} <span class="meta">{{ l.created_at[:10] }}</span></p>
+      {% else %}
+        <p class="sub">Nothing logged yet.</p>
+      {% endfor %}
+      <p class="log">🌱 Planted <span class="meta">{{ s.planted_on }}</span></p>
+    </div>
+  </div>
+</div>
+{% endblock %}
