@@ -5,6 +5,7 @@
 {% block content %}
 {% if not drive %}
   <h1>Welcome to SaplingTrack</h1>
+  {% if session.admin %}
   <p>Start by adding your first planting drive.</p>
   <form method="POST" action="{{ url_for('add_drive') }}" class="card">
     <label for="name">Drive name</label>
@@ -13,6 +14,9 @@
     <input id="location" name="location" placeholder="Green Valley Park, Andheri">
     <button type="submit">Add drive</button>
   </form>
+  {% else %}
+  <p class="sub">Your drive hasn't been set up yet. Ask the person who gave you the code.</p>
+  {% endif %}
 {% else %}
   <div class="drive-bar">
     <form method="GET" action="{{ url_for('dashboard') }}">
@@ -22,6 +26,7 @@
         {% endfor %}
       </select>
     </form>
+    {% if session.admin %}
     <details>
       <summary>+ New drive</summary>
       <form method="POST" action="{{ url_for('add_drive') }}" class="inline-form">
@@ -30,6 +35,8 @@
         <button type="submit">Add</button>
       </form>
     </details>
+    <span class="drivecode">Drive code: <strong>{{ drive.code }}</strong></span>
+    {% endif %}
     <a class="statslink" href="{{ url_for('stats', drive=drive.id) }}">Drive statistics</a>
   </div>
 
