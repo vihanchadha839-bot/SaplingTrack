@@ -1,0 +1,38 @@
+{% extends "base.html" %}
+{% block title %}Drive statistics{% endblock %}
+{% block content %}
+<a class="back" href="{{ url_for('dashboard', drive=drive.id) }}">Back to dashboard</a>
+<h1>Drive statistics</h1>
+<form method="GET" class="drive-bar">
+  <select name="drive" onchange="this.form.submit()" aria-label="Choose drive">
+    {% for d in drives %}<option value="{{ d.id }}" {% if d.id == drive.id %}selected{% endif %}>{{ d.name }}</option>{% endfor %}
+  </select>
+</form>
+
+<section class="stats">
+  <div class="stat"><div class="stat-num">{{ total }}</div><div class="stat-label">planted</div></div>
+  <div class="stat"><div class="stat-num">{{ alive }}</div><div class="stat-label">alive</div></div>
+  <div class="stat"><div class="stat-num">{{ survival }}%</div><div class="stat-label">survival</div></div>
+  <div class="stat"><div class="stat-num">{{ waterings }}</div><div class="stat-label">waterings logged</div></div>
+</section>
+
+<div class="record">
+  <div class="card">
+    <h2>Month by month</h2>
+    <table class="tbl">
+      <tr><th>Month</th><th>Planted</th><th>Waterings</th><th>Damage reports</th></tr>
+      {% for m, v in monthly %}<tr><td>{{ m }}</td><td>{{ v.planted }}</td><td>{{ v.water }}</td><td>{{ v.damage }}</td></tr>
+      {% else %}<tr><td colspan="4" class="sub">Nothing recorded yet.</td></tr>{% endfor %}
+    </table>
+  </div>
+  <div class="card">
+    <h2>By species</h2>
+    <table class="tbl">
+      <tr><th>Species</th><th>Planted</th><th>Alive</th><th>Survival</th></tr>
+      {% for sp, v in by_species.items() %}<tr><td>{{ sp }}</td><td>{{ v.planted }}</td><td>{{ v.alive }}</td><td>{{ (v.alive / v.planted * 100)|round|int }}%</td></tr>
+      {% else %}<tr><td colspan="4" class="sub">No saplings yet.</td></tr>{% endfor %}
+    </table>
+    <p class="sub">Right now: {{ counts.overdue }} overdue, {{ counts.damaged }} damaged, {{ counts.dead }} dead, {{ counts.established }} established.</p>
+  </div>
+</div>
+{% endblock %}
